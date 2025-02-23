@@ -35,3 +35,4 @@ fi
 
 # set enviroment
 export NEMU_HOME=$(pwd)
+echo "set NEMU_HOME=${NEMU_HOME}"

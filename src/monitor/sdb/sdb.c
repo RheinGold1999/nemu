@@ -18,6 +18,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
+#include <stdlib.h>
 
 static int is_batch_mode = false;
 
@@ -54,6 +55,33 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+static int cmd_si(char *args) {
+  uint64_t step_num = 1;
+
+  if (args != NULL) {
+    char *endptr;
+    step_num = strtoul(args, &endptr, 10);
+
+    if (*endptr != '\0') {
+      printf("%s is not a valid numer, please try again.\n", args);
+      return 0;
+    }
+  }
+  cpu_exec(step_num);
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  if (strcmp(args, "r") == 0) {
+    isa_reg_display();
+  } else if (strcmp(args, "w")) {
+    // TODO: dislay all watchpoints
+  } else {
+    printf("unsupported args: %s", args);
+  }
+  return 0;
+}
+
 static struct {
   const char *name;
   const char *description;
@@ -64,6 +92,8 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
 
   /* TODO: Add more commands */
+  { "si", "Setp program, proceeding through subroutine calls", cmd_si },
+  { "info", "Generic command for showing things about the program being debugged", cmd_info },
 
 };
 
