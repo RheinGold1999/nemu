@@ -63,7 +63,7 @@ static int cmd_si(char *args) {
     step_num = strtoul(args, &endptr, 10);
 
     if (*endptr != '\0') {
-      printf("%s is not a valid numer, please try again.\n", args);
+      printf("%s is not a valid number, please try again.\n", args);
       return 0;
     }
   }
@@ -77,8 +77,37 @@ static int cmd_info(char *args) {
   } else if (strcmp(args, "w")) {
     // TODO: dislay all watchpoints
   } else {
-    printf("unsupported args: %s", args);
+    printf("Unsupported args: %s, please try again.\n", args);
   }
+  return 0;
+}
+
+static int cmd_x(char *args) {
+  if (args != NULL) {
+    char *arg = strtok(NULL, " ");
+    char *endptr;
+    uint32_t count = strtoul(arg, &endptr, 10);
+    if (*endptr != '\0') {
+      printf("%s is not a valid number, please try again.\n", arg);
+      return 0;
+    }
+    arg = strtok(NULL, " ");
+    vaddr_t addr = strtoul(arg, &endptr, 16);
+    if (*endptr != '\0') {
+      printf("%s is not a valid number(hex), please try again.\n", arg);
+      return 0;
+    }
+    uint32_t output_bytes = 0;
+    extern word_t vaddr_read(vaddr_t addr, int len);
+    while (output_bytes < count) {
+      printf("mem[0x%08x] = 0x%08x\n", addr, vaddr_read(addr, 4));
+      addr += 4;
+      output_bytes += 4;
+    }
+  } else {
+    printf("Usage: x [count] [address(hex)], please try again.\n");
+  }
+
   return 0;
 }
 
@@ -94,6 +123,7 @@ static struct {
   /* TODO: Add more commands */
   { "si", "Setp program, proceeding through subroutine calls", cmd_si },
   { "info", "Generic command for showing things about the program being debugged", cmd_info },
+  { "x", "Examine memory: x N(bytes) ADDRESS", cmd_x },
 
 };
 
