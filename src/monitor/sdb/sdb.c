@@ -86,9 +86,12 @@ static int cmd_x(char *args) {
   if (args != NULL) {
     char *arg = strtok(NULL, " ");
     char *endptr;
-    uint32_t count = strtoul(arg, &endptr, 10);
+    long count = strtol(arg, &endptr, 10);
     if (*endptr != '\0') {
       printf("%s is not a valid number, please try again.\n", arg);
+      return 0;
+    } else if (count < 1) {
+      printf("%s must be a positive number, please try again.\n", arg);
       return 0;
     }
     arg = strtok(NULL, " ");
