@@ -22,7 +22,8 @@ typedef struct watchpoint {
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
-
+  char expr[256];
+  word_t val;
 } WP;
 
 static WP wp_pool[NR_WP] = {};
@@ -41,3 +42,15 @@ void init_wp_pool() {
 
 /* TODO: Implement the functionality of watchpoint */
 
+WP* new_wp() {
+  if (free_ == NULL) {
+    printf("WP alloction failed: out of wp_pool (size 32)\n");
+    return NULL;
+  }
+  // TODO:
+  return free_;
+}
+
+void free_wp(WP *wp) {
+
+}
