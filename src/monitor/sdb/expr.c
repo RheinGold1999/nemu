@@ -21,10 +21,13 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,
+  TK_NOTYPE = 256, 
+  TK_EQ, TK_NE, TK_AND,
 
   /* TODO: Add more token types */
   TK_INT, TK_HEX,
+  TK_REG,
+  TK_PTR,
 };
 
 static struct rule {
@@ -42,10 +45,13 @@ static struct rule {
   {"\\*", '*'},         // multiply
   {"/", '/'},           // divide
   {"==", TK_EQ},        // equal
+  {"!=", TK_NE},        // not equal
+  {"&&", TK_AND},       // and
   {"\\(", '('},         // parentheses left
   {"\\)", ')'},         // parentheses right
-  {"[0-9]+", TK_INT},     // integer in dec
+  {"[0-9]+", TK_INT},   // integer in dec
   {"0[xX][0-9a-fA-F]+", TK_HEX},  // integer in hex
+  {"\\$\\$?[a-z0-9]+", TK_REG}, // reg
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -109,6 +115,7 @@ static bool make_token(char *e) {
         switch (rules[i].token_type) {
           case TK_INT:
           case TK_HEX:
+          case TK_REG:
             Assert(substr_len < 32, "%s: length exceeds", substr_start);
             memcpy(tokens[nr_token].str, substr_start, substr_len);
             break;
@@ -161,11 +168,36 @@ bool check_parentheses(int p, int q, bool *legal) {
   return false;
 }
 
+int get_token_precedence(int token_type) {
+  int prec = -1;
+  switch (token_type) {
+    case '*':
+    case '/':
+      prec = 0;
+      break;
+    
+    case '+':
+    case '-':
+      prec = 1;
+      break;
+    
+    case TK_EQ:
+    case TK_NE:
+    case TK_AND:
+      prec = 2;
+      break;
+    
+    default:
+      break;
+  }
+  return prec;
+}
+
 /**
  * @brief find the main operator 
  */
 int find_main_op_pos(int p, int q, bool *legal) {
-  // printf("find_main_op_pos: p = %d, q = %d\n", p, q);
+  printf("find_main_op_pos: p = %d, q = %d\n", p, q);
   int main_op_pos = -1;
   int parent_pair = 0;
   for (int i = p; i <= q; ++i) {
@@ -180,26 +212,26 @@ int find_main_op_pos(int p, int q, bool *legal) {
       *legal = false;
       break;
     } else if (parent_pair == 0) {
-      // printf("token type: %c\n", tokens[i].type);
-      // printf("tokens[i].type == '+' : %d\n", (tokens[i].type == '+'));
-      if ((tokens[i].type == '+') || (tokens[i].type == '-')) {
-        main_op_pos = i;
-      } else if ((tokens[i].type == '*') || (tokens[i].type == '/')) {
-        if (main_op_pos == -1) {
+      int curr_token_prec = get_token_precedence(tokens[i].type);
+      if (curr_token_prec >= 0) {
+        printf("find op: %c\n", tokens[i].type);
+        if (main_op_pos < 0) {
           main_op_pos = i;
         } else {
-          if ((tokens[main_op_pos].type == '*') || (tokens[main_op_pos].type != '/')) {
+          int main_token_prec = get_token_precedence(tokens[main_op_pos].type);
+          if (curr_token_prec > main_token_prec) {
+            printf("replace op: %c\n", tokens[i].type);
             main_op_pos = i;
           }
         }
       }
     }
   }
-  // printf("main_op_pos = %d\n", main_op_pos);
+  printf("main_op_pos = %d\n", main_op_pos);
   if (main_op_pos == -1) {
     *legal = false;
   }
-  // printf("*legal = %d\n", *legal);
+  printf("*legal = %d\n", *legal);
   return main_op_pos;
 }
 
@@ -220,6 +252,9 @@ word_t eval(int p, int q, bool *legal) {
         printf("%s is not a valid number, please try again.\n", tokens[p].str);
       }
       return num;
+    } else if (tokens[p].type == TK_REG) {
+      word_t reg_val = isa_reg_str2val(&(tokens[p].str[1]), legal);
+      return reg_val;
     } else {
       *legal = false;
       printf("%s should be a number, please try again.\n", tokens[p].str);
@@ -245,6 +280,10 @@ word_t eval(int p, int q, bool *legal) {
           return eval(p, op_pos - 1, legal) / divisor;
         }
         break;
+      case TK_EQ: return eval(p, op_pos - 1, legal) == eval(op_pos + 1, q, legal); break;
+      case TK_NE: return eval(p, op_pos - 1, legal) != eval(op_pos + 1, q, legal); break;
+      case TK_AND: return eval(p, op_pos - 1, legal) && eval(op_pos + 1, q, legal); break;
+
       default: *legal = false; break;
     }
   }
