@@ -14,7 +14,7 @@
 ***************************************************************************************/
 
 #include <isa.h>
-
+#include <memory/vaddr.h>
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.
  */
@@ -27,7 +27,7 @@ enum {
   /* TODO: Add more token types */
   TK_INT, TK_HEX,
   TK_REG,
-  TK_PTR,
+  TK_DEREF,
 };
 
 static struct rule {
@@ -49,8 +49,8 @@ static struct rule {
   {"&&", TK_AND},       // and
   {"\\(", '('},         // parentheses left
   {"\\)", ')'},         // parentheses right
-  {"[0-9]+", TK_INT},   // integer in dec
   {"0[xX][0-9a-fA-F]+", TK_HEX},  // integer in hex
+  {"[0-9]+", TK_INT},   // integer in dec
   {"\\$\\$?[a-z0-9]+", TK_REG}, // reg
 };
 
@@ -171,20 +171,24 @@ bool check_parentheses(int p, int q, bool *legal) {
 int get_token_precedence(int token_type) {
   int prec = -1;
   switch (token_type) {
+    case TK_DEREF:
+      prec = 0;
+      break;
+
     case '*':
     case '/':
-      prec = 0;
+      prec = 1;
       break;
     
     case '+':
     case '-':
-      prec = 1;
+      prec = 2;
       break;
     
     case TK_EQ:
     case TK_NE:
     case TK_AND:
-      prec = 2;
+      prec = 3;
       break;
     
     default:
@@ -283,6 +287,7 @@ word_t eval(int p, int q, bool *legal) {
       case TK_EQ: return eval(p, op_pos - 1, legal) == eval(op_pos + 1, q, legal); break;
       case TK_NE: return eval(p, op_pos - 1, legal) != eval(op_pos + 1, q, legal); break;
       case TK_AND: return eval(p, op_pos - 1, legal) && eval(op_pos + 1, q, legal); break;
+      case TK_DEREF: return vaddr_read(eval(p + 1, q, legal), 4); break;
 
       default: *legal = false; break;
     }
@@ -297,6 +302,12 @@ word_t expr(char *e, bool *success) {
   }
 
   /* TODO: Insert codes to evaluate the expression. */
+  for (int i = 0; i < nr_token; ++i) {
+    if (tokens[i].type == '*' && (i == 0 || tokens[i - 1].type == '(')) {
+      tokens[i].type = TK_DEREF;
+    }
+  }
+
   *success = true;
   word_t res = eval(0, nr_token - 1, success);
   return res;
