@@ -74,7 +74,7 @@ static int cmd_si(char *args) {
 static int cmd_info(char *args) {
   if (strcmp(args, "r") == 0) {
     isa_reg_display();
-  } else if (strcmp(args, "w")) {
+  } else if (strcmp(args, "w") == 0) {
     // TODO: dislay all watchpoints
   } else {
     printf("Unsupported args: %s, please try again.\n", args);
@@ -108,9 +108,25 @@ static int cmd_x(char *args) {
       output_bytes += 4;
     }
   } else {
-    printf("Usage: x [count] [address(hex)], please try again.\n");
+    printf("Usage: x [count (in bytes)] [address(in hex)], please try again.\n");
   }
 
+  return 0;
+}
+
+static int cmd_p(char *args) {
+  if (args != NULL) {
+    bool success;
+    extern word_t expr(char *e, bool *success);
+    word_t res = expr(args, &success);
+    if (success) {
+      printf("%d\n", res);
+    } else {
+      printf("illegal expr: %s, please check and try again.\n", args);
+    }
+  } else {
+    printf("Usage: p [EXP].\n");
+  }
   return 0;
 }
 
@@ -126,7 +142,8 @@ static struct {
   /* TODO: Add more commands */
   { "si", "Setp program, proceeding through subroutine calls", cmd_si },
   { "info", "Generic command for showing things about the program being debugged", cmd_info },
-  { "x", "Examine memory: x N(bytes) ADDRESS", cmd_x },
+  { "x", "Examine memory: x [count(in bytes)] [address(in hex)]", cmd_x },
+  { "p", "Print value of expression EXP", cmd_p },
 
 };
 
