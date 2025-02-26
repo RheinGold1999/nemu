@@ -15,25 +15,27 @@
 
 #include "sdb.h"
 
-#define NR_WP 32
+#define NR_WP 4
 
 typedef struct watchpoint {
   int NO;
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
+  struct watchpoint *prev;
   char expr[256];
   word_t val;
 } WP;
 
 static WP wp_pool[NR_WP] = {};
-static WP *head = NULL, *free_ = NULL;
+static WP *head = NULL, *tail = NULL, *free_ = NULL;
 
 void init_wp_pool() {
   int i;
   for (i = 0; i < NR_WP; i ++) {
     wp_pool[i].NO = i;
     wp_pool[i].next = (i == NR_WP - 1 ? NULL : &wp_pool[i + 1]);
+    wp_pool[i].prev = (i == 0 ? NULL : &wp_pool[i - 1]);
   }
 
   head = NULL;
@@ -44,13 +46,107 @@ void init_wp_pool() {
 
 WP* new_wp() {
   if (free_ == NULL) {
-    printf("WP alloction failed: out of wp_pool (size 32)\n");
+    printf("WP alloction failed: wp_pool is used up.\n");
     return NULL;
   }
-  // TODO:
-  return free_;
+
+  WP *wp = free_;
+  free_ = wp->next;
+
+  wp->next = NULL;
+  wp->prev = tail;
+
+  if (head == NULL) {
+    assert(tail == NULL);
+    head = wp;
+    tail = wp;
+  } else {
+    assert(tail != NULL);
+    tail->next = wp;
+    tail = wp;
+  }
+
+  return wp;
 }
 
 void free_wp(WP *wp) {
+  if (head == wp) {
+    assert(wp->prev == NULL);
+    head = wp->next;
+  } else {
+    assert(wp->prev != NULL);
+    wp->prev->next = wp->next;
+  }
 
+  if (tail == wp) {
+    assert(wp->next == NULL);
+    tail = wp->prev;
+  } else {
+    assert(wp->next != NULL);
+    wp->next->prev = wp->prev;
+  }
+
+  wp->next = free_;
+  free_ = wp;
+}
+
+void free_wp_by_id(int id) {
+  if (0 <= id && id < NR_WP) {
+    free_wp(&wp_pool[id]);
+  } else {
+    printf("Failed, id is out of range: %d\n", id);
+  }
+}
+
+WP* get_wp_head() {
+  return head;
+}
+
+WP* get_wp_next(const WP *wp) {
+  if (wp != NULL) {
+    return wp->next;
+  }
+  return NULL;
+}
+
+word_t get_wp_val(const WP *wp) {
+  assert(wp != NULL);
+  return wp->val;
+}
+
+void set_wp_val(WP *wp, word_t val) {
+  assert(wp != NULL);
+  wp->val = val;
+}
+
+int get_wp_id(const WP *wp) {
+  assert(wp != NULL);
+  return wp->NO;
+}
+
+const char* get_wp_expr(const WP *wp) {
+  assert(wp != NULL);
+  return wp->expr;
+}
+
+void set_wp_expr(WP *wp, const char *e) {
+  assert(wp != NULL);
+  assert(strlen(e) < 256);
+  strcpy(wp->expr, e);
+}
+
+void print_wp(const WP *wp) {
+  printf("Watchpoint %d: %s\n", get_wp_id(wp), wp->expr);
+}
+
+void free_all_wp() {
+  if (tail != NULL) {
+    tail->next = free_;
+    free_->prev = tail;
+    free_ = head;
+    head = NULL;
+    tail = NULL;
+  } else {
+    assert(head == NULL);
+  }
 }

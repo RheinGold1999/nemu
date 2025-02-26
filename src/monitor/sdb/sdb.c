@@ -25,6 +25,20 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 
+struct watchpoint;
+typedef struct watchpoint WP;
+
+WP* new_wp();
+void free_wp(WP *wp);
+void free_wp_by_id(int id);
+int get_wp_id(const WP *wp);
+void set_wp_expr(WP *wp, const char *e);
+void set_wp_val(WP *wp, word_t val);
+WP* get_wp_head();
+WP* get_wp_next(const WP *wp);
+void print_wp(const WP *wp);
+void free_all_wp();
+
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
   static char *line_read = NULL;
@@ -75,7 +89,11 @@ static int cmd_info(char *args) {
   if (strcmp(args, "r") == 0) {
     isa_reg_display();
   } else if (strcmp(args, "w") == 0) {
-    // TODO: dislay all watchpoints
+    WP *wp = get_wp_head();
+    while (wp != NULL) {
+      print_wp(wp);
+      wp = get_wp_next(wp);
+    }
   } else {
     printf("Unsupported args: %s, please try again.\n", args);
   }
@@ -130,11 +148,46 @@ static int cmd_p(char *args) {
   return 0;
 }
 
+static int cmd_w(char *args) {
+  if (args != NULL) {
+    bool success;
+    word_t val = expr(args, &success);
+    if (success) {
+      WP *wp = new_wp();
+      if (wp != NULL) {
+        set_wp_expr(wp, args);
+        set_wp_val(wp, val);
+      }
+    } else {
+      printf("invalid expressios: %s, please try again.\n", args);
+    }
+  } else {
+    printf("Usage: w [EXP].\n");
+  }
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  if (args != NULL) {
+    char *endptr;
+    long id = strtol(args, &endptr, 0);
+    if (*endptr == '\0') {
+        free_wp_by_id(id);
+    } else {
+      printf("%s is invalid, use `info w` to check in-use watchpoints!\n", args);
+    }
+  } else {
+    free_all_wp();
+  }
+  return 0;
+}
+
 static struct {
   const char *name;
   const char *description;
   int (*handler) (char *);
 } cmd_table [] = {
+
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
@@ -144,6 +197,8 @@ static struct {
   { "info", "Generic command for showing things about the program being debugged", cmd_info },
   { "x", "Examine memory: x [count(in bytes)] [address(in hex)]", cmd_x },
   { "p", "Print value of expression EXP", cmd_p },
+  { "w", "Set a watchpoint for EXPRESSION", cmd_w },
+  { "d", "Delete all or some watchpoints.", cmd_d },
 
 };
 

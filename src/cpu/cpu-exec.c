@@ -32,12 +32,46 @@ static bool g_print_step = false;
 
 void device_update();
 
+#ifdef CONFIG_WATCHPOINT
+struct watchpoint;
+typedef struct watchpoint WP;
+
+WP* get_wp_head();
+WP* get_wp_next(const WP *wp);
+word_t get_wp_val(const WP *wp);
+void set_wp_val(WP *wp, word_t val);
+const char* get_wp_expr(const WP *wp);
+int get_wp_id(const WP *wp);
+
+word_t expr(const char *e, bool *success);
+#endif
+
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+#ifdef CONFIG_WATCHPOINT
+  static WP *wp;
+  static char wp_expr[256];
+  static bool success;
+  wp = get_wp_head();
+  while (wp != NULL) {
+    strcpy(wp_expr, get_wp_expr(wp));
+    word_t new_val = expr(wp_expr, &success);
+    assert(success);
+    word_t old_val = get_wp_val(wp);
+    if (new_val != old_val) {
+      nemu_state.state = NEMU_STOP;
+      printf("Watchpoint %d: %s\n", get_wp_id(wp), wp_expr);
+      printf("Old value = %d\n", old_val);
+      printf("New value = %d\n", new_val);
+      set_wp_val(wp, new_val);
+    }
+    wp = get_wp_next(wp);
+  }
+#endif
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
