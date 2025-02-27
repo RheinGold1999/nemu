@@ -36,3 +36,5 @@ fi
 # set enviroment
 export NEMU_HOME=$(pwd)
 echo "set NEMU_HOME=${NEMU_HOME}"
+export AM_HOME=$(pwd)/../abstract-machine
+echo "set AM_HOME=${AM_HOME}"
