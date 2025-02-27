@@ -15,7 +15,8 @@
 
 #include "sdb.h"
 
-#define NR_WP 4
+#define NR_WP 32
+#define EXPR_LEN 256
 
 typedef struct watchpoint {
   int NO;
@@ -23,7 +24,7 @@ typedef struct watchpoint {
 
   /* TODO: Add more members if necessary */
   struct watchpoint *prev;
-  char expr[256];
+  char expr[EXPR_LEN];
   word_t val;
 } WP;
 
@@ -131,7 +132,7 @@ const char* get_wp_expr(const WP *wp) {
 
 void set_wp_expr(WP *wp, const char *e) {
   assert(wp != NULL);
-  assert(strlen(e) < 256);
+  assert(strlen(e) < EXPR_LEN);
   strcpy(wp->expr, e);
 }
 

@@ -44,15 +44,8 @@ const char* get_wp_expr(const WP *wp);
 int get_wp_id(const WP *wp);
 
 word_t expr(const char *e, bool *success);
-#endif
 
-static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
-#ifdef CONFIG_ITRACE_COND
-  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
-#endif
-  if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
-  IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
-#ifdef CONFIG_WATCHPOINT
+void check_watchpoints() {
   static WP *wp;
   static char wp_expr[256];
   static bool success;
@@ -71,6 +64,17 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
     }
     wp = get_wp_next(wp);
   }
+}
+#endif
+
+static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
+#ifdef CONFIG_ITRACE_COND
+  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
+#endif
+  if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
+  IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+#ifdef CONFIG_WATCHPOINT
+  check_watchpoints();
 #endif
 }
 
