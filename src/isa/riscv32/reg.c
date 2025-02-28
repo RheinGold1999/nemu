@@ -24,16 +24,15 @@ const char *regs[] = {
 };
 
 void isa_reg_display() {
+  printf("       PC = 0x%08x\n", cpu.pc);
   for (int i = 0; i < ARRLEN(regs); ++i) {
     printf("regs[%3s] = 0x%08x\n", regs[i], isa_reg_str2val(regs[i], NULL));
   }
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
-  *success = false;
   for (int i = 0; i < ARRLEN(regs); ++i) {
     if (strcmp(s, regs[i]) == 0) {
-      *success = true;
       return cpu.gpr[i];
     }
   }
