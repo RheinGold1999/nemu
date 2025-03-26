@@ -13,6 +13,8 @@
 # See the Mulan PSL v2 for more details.
 #**************************************************************************************/
 
+$(info reading $(shell pwd)/Makefile...)
+
 REPO_PATH = repo
 ifeq ($(wildcard repo/spike_main),)
   $(shell git clone --depth=1 git@github.com:NJU-ProjectN/riscv-isa-sim $(REPO_PATH))

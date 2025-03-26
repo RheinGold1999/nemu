@@ -18,6 +18,9 @@
 #include "../local-include/reg.h"
 
 bool isa_difftest_checkregs(CPU_state *ref_r, vaddr_t pc) {
+  if (memcmp(&cpu, ref_r, sizeof(cpu)) == 0) {
+    return true;
+  }
   return false;
 }
 
