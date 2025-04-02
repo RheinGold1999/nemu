@@ -16,15 +16,14 @@
 #include <isa.h>
 #include "isa-def.h"
 
-extern void __am_asm_trap(void);
-
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   /* TODO: Trigger an interrupt/exception with ``NO''.
    * Then return the address of the interrupt/exception vector.
    */
-  cpu.csr[CPU_CSR_MEPC] = epc;
-  cpu.csr[CPU_CSR_MCAUSE] = NO;
-  return (word_t) cpu.csr[CPU_CSR_MTVEC];
+  cpu.csr[RV32_CSR_MEPC] = epc;
+  cpu.csr[RV32_CSR_MCAUSE] = NO;
+  cpu.csr[RV32_CSR_MSTATUS] = 0x1800;  // for DiffTest
+  return (word_t) cpu.csr[RV32_CSR_MTVEC];
 }
 
 word_t isa_query_intr() {
