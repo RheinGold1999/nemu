@@ -34,7 +34,9 @@ else
 fi
 
 # set enviroment
-export NEMU_HOME=$(pwd)
+export NEMU_HOME=$(pwd)/nemu
 echo "set NEMU_HOME=${NEMU_HOME}"
-export AM_HOME=$(pwd)/../abstract-machine
+export AM_HOME=$(pwd)/abstract-machine
 echo "set AM_HOME=${AM_HOME}"
+export NAVY_HOME=$(pwd)/navy-apps
+echo "set NAVY_HOME=${NAVY_HOME}"
