@@ -17,6 +17,19 @@
 #include <memory/vaddr.h>
 #include <memory/paddr.h>
 
+int isa_mmu_check(vaddr_t vaddr, int len, int type) {
+  int mmu_mode = MMU_DIRECT;
+  if ((cpu.csr[RV32_CSR_SATP] >> 30) & 0x1) {
+    mmu_mode = MMU_TRANSLATE;
+  }
+  return mmu_mode;
+}
+
 paddr_t isa_mmu_translate(vaddr_t vaddr, int len, int type) {
-  return MEM_RET_FAIL;
+  size_t dir_i = (vaddr >> 22) & 0x3FFULL;
+  size_t tb_i = (vaddr >> 12) & 0x3FFULL;
+  uint32_t *pdir = (uint32_t *)(cpu.csr[RV32_CSR_SATP] << 12);
+  uint32_t *ptb = (uint32_t *)(pdir[dir_i] & (~0xFFFULL));
+  paddr_t pg_addr = ptb[tb_i] & (~0xFFFULL);
+  return pg_addr | (vaddr & 0xFFFULL);
 }

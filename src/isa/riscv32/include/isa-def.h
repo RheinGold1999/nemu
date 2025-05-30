@@ -19,6 +19,7 @@
 #include <common.h>
 
 #define RV32_CSR_SIZE (4096)
+#define RV32_CSR_SATP (0x180)
 #define RV32_CSR_MSTATUS (0x300)
 #define RV32_CSR_MTVEC (0x305)
 #define RV32_CSR_MEPC (0x341)
@@ -35,6 +36,6 @@ typedef struct {
   uint32_t inst;
 } MUXDEF(CONFIG_RV64, riscv64_ISADecodeInfo, riscv32_ISADecodeInfo);
 
-#define isa_mmu_check(vaddr, len, type) (MMU_DIRECT)
+// #define isa_mmu_check(vaddr, len, type) (MMU_DIRECT)
 
 #endif
