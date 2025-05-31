@@ -26,10 +26,12 @@ int isa_mmu_check(vaddr_t vaddr, int len, int type) {
 }
 
 paddr_t isa_mmu_translate(vaddr_t vaddr, int len, int type) {
-  size_t dir_i = (vaddr >> 22) & 0x3FFULL;
-  size_t tb_i = (vaddr >> 12) & 0x3FFULL;
-  uint32_t *pdir = (uint32_t *)(cpu.csr[RV32_CSR_SATP] << 12);
-  uint32_t *ptb = (uint32_t *)(pdir[dir_i] & (~0xFFFULL));
-  paddr_t pg_addr = ptb[tb_i] & (~0xFFFULL);
-  return pg_addr | (vaddr & 0xFFFULL);
+  size_t dir_i = (vaddr >> 22) & 0x3FF;
+  size_t tb_i = (vaddr >> 12) & 0x3FF;
+  uint32_t *pdir = (uint32_t *)(uintptr_t)(cpu.csr[RV32_CSR_SATP] << 12);
+  uint32_t *ptb = (uint32_t *)(uintptr_t)(pdir[dir_i] & (~0xFFF));
+  paddr_t pg_addr = ptb[tb_i] & (~0xFFF);
+  paddr_t paddr = pg_addr | (vaddr & 0xFFF);
+  assert(paddr == vaddr);
+  return paddr;
 }
